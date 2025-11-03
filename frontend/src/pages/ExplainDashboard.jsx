@@ -48,7 +48,26 @@ function ExplainDashboard() {
       const response = await axios.get(`${EXPLAIN_API_BASE_URL}/explain/global`);
       setGlobalExplanation(response.data);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error fetching global explanation');
+      // Fallback: use coefficient-based importance from /api/feature_importance
+      try {
+        const coeffResp = await axios.get(`${EXPLAIN_API_BASE_URL}/api/feature_importance`);
+        const feature_importance = (coeffResp.data || []).map((item) => ({
+          feature: item.feature,
+          mean_abs_shap: item.importance,
+        }));
+        setGlobalExplanation({
+          feature_importance,
+          explainer_type: 'CoefficientFallback',
+          sample_size: feature_importance.length,
+          cached: false,
+        });
+      } catch (fallbackErr) {
+        setError(
+          err.response?.data?.error ||
+          fallbackErr.response?.data?.error ||
+          'Error fetching global explanation'
+        );
+      }
     } finally {
       setLoading(false);
     }
