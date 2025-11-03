@@ -123,6 +123,7 @@ def generate_background_data(n_samples=100):
 def get_shap_explainer():
     """Get or create SHAP explainer with caching"""
     if not SHAP_AVAILABLE:
+        # SHAP not available; caller should use coefficient-based fallback
         return None
     
     model, scaler, _, _ = get_model_components()
@@ -195,25 +196,28 @@ def explain_global():
                 'cached': True
             })
         
-        if not SHAP_AVAILABLE:
-            return jsonify({'error': 'SHAP library not available'}), 500
-        
-        explainer = get_shap_explainer()
-        if explainer is None:
-            return jsonify({'error': 'Failed to create SHAP explainer'}), 500
-        
-        # Get background data for computing mean SHAP values
-        background = generate_background_data(n_samples=100)
-        if background is None:
-            return jsonify({'error': 'Failed to generate background data'}), 500
-        
-        # Compute SHAP values for background data (mean importance)
-        shap_values = explainer.shap_values(background)
-        
-        # Calculate mean absolute SHAP values per feature
-        mean_abs_shap = np.mean(np.abs(shap_values), axis=0)
-        
-        # Create feature importance list
+        feature_importance = None
+        explainer = None
+        mean_abs_shap = None
+
+        if SHAP_AVAILABLE:
+            explainer = get_shap_explainer()
+            if explainer is not None:
+                # Get background data for computing mean SHAP values
+                background = generate_background_data(n_samples=100)
+                if background is not None:
+                    # Compute SHAP values for background data (mean importance)
+                    shap_values = explainer.shap_values(background)
+                    mean_abs_shap = np.mean(np.abs(shap_values), axis=0)
+
+        if mean_abs_shap is None:
+            # Fallback: approximate global importance using absolute model coefficients
+            if hasattr(model, 'coef_') and len(model.coef_) == len(feature_columns):
+                mean_abs_shap = np.abs(model.coef_)
+            else:
+                return jsonify({'error': 'Unable to compute global importance'}), 500
+
+        # Create feature importance list (SHAP or coefficient-based)
         feature_importance = [
             {
                 'feature': feature_columns[i],
@@ -227,8 +231,8 @@ def explain_global():
         
         explanation = {
             'feature_importance': feature_importance,
-            'explainer_type': 'LinearExplainer',
-            'sample_size': len(background),
+            'explainer_type': 'LinearExplainer' if SHAP_AVAILABLE and explainer is not None else 'CoefficientFallback',
+            'sample_size': int(len(feature_importance)),
             'cached': False
         }
         
@@ -266,25 +270,35 @@ def explain_local():
         # Make prediction
         prediction = model.predict(scaled_data)[0]
         
-        if not SHAP_AVAILABLE:
-            return jsonify({'error': 'SHAP library not available'}), 500
-        
-        explainer = get_shap_explainer()
-        if explainer is None:
-            return jsonify({'error': 'Failed to create SHAP explainer'}), 500
-        
-        # Compute SHAP values for this instance
-        shap_values = explainer.shap_values(scaled_data[0])
-        
-        # Create contributions list
-        contributions = [
-            {
-                'feature': feature_columns[i],
-                'shap': float(shap_values[i]),
-                'value': float(scaled_data[0][i])
-            }
-            for i in range(len(feature_columns))
-        ]
+        contributions = None
+
+        if SHAP_AVAILABLE:
+            explainer = get_shap_explainer()
+            if explainer is not None:
+                # Compute SHAP values for this instance
+                shap_values = explainer.shap_values(scaled_data[0])
+                contributions = [
+                    {
+                        'feature': feature_columns[i],
+                        'shap': float(shap_values[i]),
+                        'value': float(scaled_data[0][i])
+                    }
+                    for i in range(len(feature_columns))
+                ]
+
+        if contributions is None:
+            # Fallback: use model coefficients times feature value as contribution
+            if hasattr(model, 'coef_') and len(model.coef_) == len(feature_columns):
+                contributions = [
+                    {
+                        'feature': feature_columns[i],
+                        'shap': float(model.coef_[i] * scaled_data[0][i]),
+                        'value': float(scaled_data[0][i])
+                    }
+                    for i in range(len(feature_columns))
+                ]
+            else:
+                return jsonify({'error': 'Unable to compute local explanation'}), 500
         
         # Sort by absolute SHAP value
         contributions.sort(key=lambda x: abs(x['shap']), reverse=True)
