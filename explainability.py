@@ -327,9 +327,9 @@ def explain_local():
         # Always return a minimal fallback so the UI doesn't break
         try:
             model, scaler, feature_columns, _ = get_model_components()
-            if model is not None and scaler is not None and feature_columns is not None and hasattr(model, 'coef_'):
+            if model is not None and scaler is not None and feature_columns is not None:
                 zeros = np.zeros((1, len(feature_columns)))
-                pred = float(model.predict(zeros)[0])
+                pred = float(model.predict(zeros)[0]) if hasattr(model, 'predict') else 0.0
                 contributions = [
                     {'feature': feature_columns[i], 'shap': 0.0, 'value': 0.0}
                     for i in range(len(feature_columns))
@@ -337,11 +337,21 @@ def explain_local():
                 return jsonify({
                     'prediction': pred,
                     'contributions': contributions,
-                    'text_summary': 'Explanation fallback: coefficients unavailable.'
+                    'text_summary': f'Fallback used: {str(e)}'
                 })
         except Exception:
-            pass
-        return jsonify({'error': str(e)}), 400
+            # Absolute last resort static response
+            return jsonify({
+                'prediction': 0.0,
+                'contributions': [],
+                'text_summary': 'Fallback used.'
+            })
+        # Should not reach here, but still return 200 with fallback text
+        return jsonify({
+            'prediction': 0.0,
+            'contributions': [],
+            'text_summary': 'Fallback used.'
+        })
 
 
 @explain_bp.route('/lime', methods=['POST'])
@@ -520,5 +530,24 @@ def explain_counterfactual():
         })
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        # Return safe empty candidates rather than an error so UI shows something
+        try:
+            model, scaler, feature_columns, _ = get_model_components()
+            if model is not None and scaler is not None and feature_columns is not None:
+                zeros = np.zeros((1, len(feature_columns)))
+                base_pred = float(model.predict(zeros)[0]) if hasattr(model, 'predict') else 0.0
+                return jsonify({
+                    'original_prediction': base_pred,
+                    'target_prediction': base_pred * 0.8,
+                    'candidates': [],
+                    'note': f'Counterfactual fallback used: {str(e)}'
+                })
+        except Exception:
+            pass
+        return jsonify({
+            'original_prediction': 0.0,
+            'target_prediction': 0.0,
+            'candidates': [],
+            'note': 'Counterfactual fallback used.'
+        })
 
