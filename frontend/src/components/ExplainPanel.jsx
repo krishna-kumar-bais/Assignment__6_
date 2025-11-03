@@ -28,17 +28,19 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import axios from 'axios';
 
-// Use the same host as the frontend, just different port
+// Resolve API base URL: prefer explicit env; otherwise use same origin in prod,
+// and localhost during development.
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL.replace('/api', '');
   }
-  // If running on network IP, use network IP for backend too
-  const hostname = window.location.hostname;
+  const { hostname, protocol } = window.location;
+  // In production (Render), use same origin. Ports are managed by the platform.
   if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-    return `http://${hostname}:5001`;
+    return `${protocol}//${hostname}`;
   }
-  return 'http://localhost:5001';
+  // Local development fallback
+  return 'http://localhost:5000';
 };
 const EXPLAIN_API_BASE_URL = getApiBaseUrl();
 
