@@ -1,0 +1,56 @@
+<<CHANGE_SUMMARY>>
+
+## Exact File Edits Planned:
+
+### 1. modify: requirements.txt
+   - Append: `shap>=0.44.0`, `lime>=0.2.0.1`, `cachetools>=5.0`
+   - Description: Add explainability library dependencies
+
+### 2. add: explainability.py (NEW FILE)
+   - Flask Blueprint `/explain` with 4 endpoints:
+     - GET `/explain/global` - Returns global feature importance using SHAP
+     - POST `/explain/local` - Returns local SHAP values for a single prediction
+     - POST `/explain/lime` - Returns LIME explanation for a single prediction
+     - POST `/explain/cf` - Returns counterfactual suggestions
+   - Reuses model/scaler/feature_columns from app.py (shared globals)
+   - Implements SHAP LinearExplainer (fast, exact for LinearRegression)
+   - Generates background data sample (synthetic 100 samples based on feature distributions)
+   - Caching: saves global explanation to `explain_global_cache.json` with 7-day TTL
+   - Counterfactual: identifies actionable numeric features, tries ±0.5σ, ±1σ, ±2σ deltas
+   - Sanitizes outputs (no PII)
+
+### 3. modify: app.py
+   - Import: `from explainability import explain_bp`
+   - Register blueprint: `app.register_blueprint(explain_bp, url_prefix='/explain')`
+   - Location: After CORS setup, before route definitions (~line 27)
+   - Description: Integrate explainability endpoints into Flask app
+
+### 4. add: tests/test_explainability.py (NEW FILE)
+   - Flask test client setup
+   - Test `/explain/global` returns 200 with expected keys
+   - Test `/explain/local` with sample input returns 200 with prediction/contributions/text_summary
+   - Test `/explain/lime` with sample input returns 200
+   - Test `/explain/cf` with sample input returns 200
+   - Graceful handling if model not loaded or SHAP fails
+
+### 5. modify: README.md
+   - Add new section "Explainability API" after "Model Performance"
+   - Include curl examples for all 4 endpoints
+   - Brief description of each endpoint's purpose
+
+## Implementation Details:
+
+- **SHAP Explainer**: Uses `shap.LinearExplainer` (optimal for LinearRegression - exact, fast)
+- **Background Data**: Generates 100 synthetic samples matching feature distributions (fallback since X_train not saved)
+- **Caching**: File-based cache with timestamp checking (7 days)
+- **Preprocessing**: Exact match to `app.py`'s `preprocess_input()` function
+- **Counterfactual**: Focuses on numeric actionable features (Age, Service time, Work load, Distance, Transportation expense)
+- **Error Handling**: Graceful degradation if SHAP/LIME unavailable, returns informative errors
+
+## Testing Strategy:
+
+- Use pytest with Flask test client
+- Sample input matches expected feature keys from app.py
+- Tests verify JSON structure and status codes
+- If heavy SHAP operations fail, tests skip or use cached results
+
