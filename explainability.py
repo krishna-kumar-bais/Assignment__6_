@@ -275,16 +275,20 @@ def explain_local():
         if SHAP_AVAILABLE:
             explainer = get_shap_explainer()
             if explainer is not None:
-                # Compute SHAP values for this instance
-                shap_values = explainer.shap_values(scaled_data[0])
-                contributions = [
-                    {
-                        'feature': feature_columns[i],
-                        'shap': float(shap_values[i]),
-                        'value': float(scaled_data[0][i])
-                    }
-                    for i in range(len(feature_columns))
-                ]
+                try:
+                    # Compute SHAP values for this instance
+                    shap_values = explainer.shap_values(scaled_data[0])
+                    contributions = [
+                        {
+                            'feature': feature_columns[i],
+                            'shap': float(shap_values[i]),
+                            'value': float(scaled_data[0][i])
+                        }
+                        for i in range(len(feature_columns))
+                    ]
+                except Exception:
+                    # If SHAP computation fails at runtime, we'll fall back below
+                    contributions = None
 
         if contributions is None:
             # Fallback: use model coefficients times feature value as contribution

@@ -90,6 +90,8 @@ def preprocess_input(data):
     # Reorder columns to match training data
     if feature_columns is not None:
         df_encoded = df_encoded.reindex(columns=feature_columns, fill_value=0)
+    # Replace any remaining NaNs with zeros to satisfy scaler/model expectations
+    df_encoded = df_encoded.fillna(0)
     
     return df_encoded
 
