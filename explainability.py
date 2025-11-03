@@ -13,6 +13,10 @@ import numpy as np
 import warnings
 warnings.filterwarnings('ignore')
 
+# Feature flags: keep heavy explainers off by default on Render
+USE_SHAP = os.environ.get('USE_SHAP', '0') == '1'
+USE_LIME = os.environ.get('USE_LIME', '0') == '1'
+
 # Lazy import to avoid circular dependency
 def get_model_components():
     """Get model components from app module (lazy import to avoid circular dependency)"""
@@ -122,7 +126,7 @@ def generate_background_data(n_samples=100):
 
 def get_shap_explainer():
     """Get or create SHAP explainer with caching"""
-    if not SHAP_AVAILABLE:
+    if not SHAP_AVAILABLE or not USE_SHAP:
         # SHAP not available; caller should use coefficient-based fallback
         return None
     
@@ -200,7 +204,7 @@ def explain_global():
         explainer = None
         mean_abs_shap = None
 
-        if SHAP_AVAILABLE:
+        if SHAP_AVAILABLE and USE_SHAP:
             explainer = get_shap_explainer()
             if explainer is not None:
                 # Get background data for computing mean SHAP values
@@ -269,7 +273,7 @@ def explain_local():
 
         contributions = None
 
-        if SHAP_AVAILABLE:
+        if SHAP_AVAILABLE and USE_SHAP:
             explainer = get_shap_explainer()
             if explainer is not None:
                 try:
@@ -374,7 +378,7 @@ def explain_lime():
         prediction = float(model.predict(scaled_data)[0])
 
         # Prefer real LIME if available; otherwise provide a deterministic fallback
-        if LIME_AVAILABLE:
+        if LIME_AVAILABLE and USE_LIME:
             try:
                 background = generate_background_data(n_samples=100)
                 explainer = lime_tabular.LimeTabularExplainer(
@@ -469,11 +473,6 @@ def explain_counterfactual():
                 idx = feature_columns.index(feat)
                 feature_mapping[feat] = idx
         
-        # Generate background to estimate feature distributions
-        background = generate_background_data(n_samples=100)
-        if background is None:
-            return jsonify({'error': 'Failed to generate background data'}), 500
-        
         candidates = []
         
         # Try different deltas: ±0.5σ, ±1σ, ±2σ
@@ -481,10 +480,8 @@ def explain_counterfactual():
             if feat_idx >= len(scaled_data[0]):
                 continue
             
-            # Get feature distribution from background
-            feat_values = background[:, feat_idx]
-            feat_mean = np.mean(feat_values)
-            feat_std = np.std(feat_values)
+            # In scaled space, use unit standard deviation to propose deltas
+            feat_std = 1.0
             current_value = scaled_data[0][feat_idx]
             
             # Try different deltas
