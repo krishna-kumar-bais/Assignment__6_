@@ -97,7 +97,7 @@ function PredictPage() {
     age: 35,
     education: 2,
     serviceTime: 5,
-    workLoad: 270.0, // matches 'Work load Average/day '
+    workLoad: 11.0, // matches 'Work load Average/day '
     transportExpense: 200,
     distance: 10,
     socialDrinker: 0,
@@ -291,7 +291,7 @@ function PredictPage() {
                   <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Work Load (hours/day)</Typography>
                   <TextField
                     fullWidth
-                    placeholder="e.g., 270"
+                    placeholder="e.g., 11"
                     type="number"
                     value={formData.workLoad}
                     onChange={(e) => handleInputChange('workLoad', parseFloat(e.target.value))}
