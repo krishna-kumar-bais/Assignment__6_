@@ -87,7 +87,6 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
         input: payload,
       });
       setLocalExplanation(response.data);
-      setActiveTab('shap');
       
       // Update parent prediction if callback provided
       if (onPredictionUpdate) {
@@ -109,7 +108,6 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
         input: payload,
       });
       setLimeExplanation(response.data);
-      setActiveTab('lime');
     } catch (err) {
       setError(err.response?.data?.error || 'Error fetching LIME explanation');
     } finally {
@@ -127,7 +125,6 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
         target: 0.8,
       });
       setCounterfactual(response.data);
-      setActiveTab('cf');
     } catch (err) {
       setError(err.response?.data?.error || 'Error fetching counterfactual');
     } finally {
@@ -176,28 +173,39 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
       {/* Action Buttons */}
       <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
         <Button
-          variant="contained"
+          variant={activeTab === 'shap' ? "contained" : "outlined"}
           startIcon={<Psychology />}
-          onClick={() => fetchLocalExplanation()}
+          onClick={() => {
+            setActiveTab('shap');
+            fetchLocalExplanation();
+          }}
           disabled={loading}
         >
           {loading && activeTab === 'shap' ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
           Explain with SHAP
         </Button>
         <Button
-          variant="outlined"
+          variant={activeTab === 'lime' ? "contained" : "outlined"}
           startIcon={<AutoFixHigh />}
-          onClick={fetchLimeExplanation}
+          onClick={() => {
+            setActiveTab('lime');
+            fetchLimeExplanation();
+          }}
           disabled={loading}
         >
+          {loading && activeTab === 'lime' ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
           Show LIME
         </Button>
         <Button
-          variant="outlined"
+          variant={activeTab === 'cf' ? "contained" : "outlined"}
           startIcon={<TrendingUp />}
-          onClick={fetchCounterfactual}
+          onClick={() => {
+            setActiveTab('cf');
+            fetchCounterfactual();
+          }}
           disabled={loading}
         >
+          {loading && activeTab === 'cf' ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
           Show Counterfactual
         </Button>
       </Box>
