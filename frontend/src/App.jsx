@@ -47,18 +47,19 @@ import ExplainPanel from './components/ExplainPanel';
 import ExplainDashboard from './pages/ExplainDashboard';
 
 // Use the same host as the frontend, just different port
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
+//const getApiBaseUrl = () => {
+//  if (import.meta.env.VITE_API_BASE_URL) {
+//    return import.meta.env.VITE_API_BASE_URL;
+//  }
   // If running on network IP, use network IP for backend too
-  const hostname = window.location.hostname;
-  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-    return `http://${hostname}:5001/api`;
-  }
-  return 'http://localhost:5001/api';
-};
-const API_BASE_URL = getApiBaseUrl();
+ // const hostname = window.location.hostname;
+//  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+  //  return `http://${hostname}:5001/api`;
+ // }
+ // return 'http://localhost:5001/api';
+//};
+//const API_BASE_URL = getApiBaseUrl();
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 function Navigation() {
   const location = useLocation();
