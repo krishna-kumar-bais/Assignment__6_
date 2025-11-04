@@ -25,8 +25,18 @@ cors_origins = os.environ.get('CORS_ORIGINS', '*')
 if ',' in cors_origins:
     cors_origins = [o.strip() for o in cors_origins.split(',')]
 CORS(app, resources={
-    r"/api/*": {"origins": cors_origins},
-    r"/explain/*": {"origins": cors_origins}
+    r"/api/*": {
+        "origins": cors_origins,
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": True
+    },
+    r"/explain/*": {
+        "origins": cors_origins,
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": True
+    }
 })
 
 # Import and register explainability blueprint
