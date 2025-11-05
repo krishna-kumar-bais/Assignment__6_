@@ -99,11 +99,11 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
     }
   };
 
-  const fetchLimeExplanation = async () => {
+  const fetchLimeExplanation = async (values = inputValues) => {
     setLoading(true);
     setError(null);
     try {
-      const payload = mapToBackendFields(inputValues);
+      const payload = mapToBackendFields(values);
       const response = await axios.post(`${EXPLAIN_API_BASE_URL}/explain/lime`, {
         input: payload,
       });
@@ -115,11 +115,11 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
     }
   };
 
-  const fetchCounterfactual = async () => {
+  const fetchCounterfactual = async (values = inputValues) => {
     setLoading(true);
     setError(null);
     try {
-      const payload = mapToBackendFields(inputValues);
+      const payload = mapToBackendFields(values);
       const response = await axios.post(`${EXPLAIN_API_BASE_URL}/explain/cf`, {
         input: payload,
         target: 0.8,
@@ -135,10 +135,17 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
   const handleWhatIfChange = async (field, value) => {
     const newValues = { ...whatIfValues, [field]: value };
     setWhatIfValues(newValues);
-    
+
     // Update input values and fetch new explanation
     const updatedValues = { ...inputValues, [field]: value };
     await fetchLocalExplanation(updatedValues);
+
+    // Keep other explanation tabs in sync with What-If adjustments
+    if (activeTab === 'lime') {
+      await fetchLimeExplanation(updatedValues);
+    } else if (activeTab === 'cf') {
+      await fetchCounterfactual(updatedValues);
+    }
   };
 
   // Prepare chart data for SHAP
@@ -189,7 +196,9 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
           startIcon={<AutoFixHigh />}
           onClick={() => {
             setActiveTab('lime');
-            fetchLimeExplanation();
+            // Use latest What-If values when requesting LIME
+            const merged = { ...inputValues, workLoad: whatIfValues.workLoad, distance: whatIfValues.distance };
+            fetchLimeExplanation(merged);
           }}
           disabled={loading}
         >
@@ -201,7 +210,9 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
           startIcon={<TrendingUp />}
           onClick={() => {
             setActiveTab('cf');
-            fetchCounterfactual();
+            // Use latest What-If values when requesting Counterfactuals
+            const merged = { ...inputValues, workLoad: whatIfValues.workLoad, distance: whatIfValues.distance };
+            fetchCounterfactual(merged);
           }}
           disabled={loading}
         >
