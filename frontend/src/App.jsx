@@ -85,7 +85,7 @@ function PredictPage() {
     age: 35,
     education: 2,
     serviceTime: 5,
-    workLoad: 11.0, // matches 'Work load Average/day '
+    workLoad: 270.0, // matches 'Work load Average/day ' - work units not hours
     transportExpense: 200,
     distance: 10,
     socialDrinker: 0,
@@ -276,15 +276,16 @@ function PredictPage() {
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Work Load (hours/day)</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Work Load (work units/day)</Typography>
                   <TextField
                     fullWidth
-                    placeholder="e.g., 11"
+                    placeholder="e.g., 270"
                     type="number"
                     value={formData.workLoad}
                     onChange={(e) => handleInputChange('workLoad', parseFloat(e.target.value))}
-                    inputProps={{ min: 0, max: 24, step: 0.1 }}
+                    inputProps={{ min: 200, max: 350, step: 1 }}
                     required
+                    helperText="Workload intensity (200-350 units)"
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
