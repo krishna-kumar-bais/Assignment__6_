@@ -46,20 +46,8 @@ import axios from 'axios';
 import ExplainPanel from './components/ExplainPanel';
 import ExplainDashboard from './pages/ExplainDashboard';
 
-// Use the same host as the frontend
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
-  // In production, use relative path (same domain)
-  const hostname = window.location.hostname;
-  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-    return '/api';
-  }
-  // Local development
-  return 'http://localhost:5000/api';
-};
-const API_BASE_URL = getApiBaseUrl();
+// Use environment variable or default to localhost
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 function Navigation() {
   const location = useLocation();
