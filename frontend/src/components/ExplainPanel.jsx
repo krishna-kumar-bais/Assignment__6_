@@ -161,7 +161,7 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
     <Paper elevation={2} sx={{ p: 3, mt: 3 }}>
       <Typography variant="h5" gutterBottom>
         <Lightbulb sx={{ mr: 1, verticalAlign: 'middle' }} />
-        Explanation & What-If Analysis
+        Explanation & What-If Analysis (Local Explanation)
       </Typography>
 
       {error && (
