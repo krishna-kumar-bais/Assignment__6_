@@ -233,7 +233,7 @@ function ExplainPanel({ inputValues, onPredictionUpdate }) {
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Typography gutterBottom>
-                Work Load (hours/day): {whatIfValues.workLoad.toFixed(1)}
+                Work Load (work units/day): {whatIfValues.workLoad.toFixed(1)}
               </Typography>
               <Slider
                 value={whatIfValues.workLoad}
